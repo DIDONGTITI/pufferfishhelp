@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moderator Login and Chat</title>
+    <style>
+        .unread {
+            color: red;
+        }
+        .read {
+            color: blue;
+        }
+        #login-form {
+            display: block;
+        }
+        #chat-box {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Moderator Login Form -->
+    <div id="login-form">
+        <h2>Moderator Login</h2>
+        <form id="loginForm">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Enter password">
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <!-- Chat Interface (Hidden until login) -->
+    <div id="chat-box">
+        <h2>Moderator Chat</h2>
+        <div id="chat-messages"></div>
+        <input type="text" id="message" placeholder="Enter your message">
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="endChat()">End Chat</button>
+    </div>
+
+    <script>
+        const correctPassword = 'Happydaysforever69';
+        const socket = new WebSocket(`ws://${window.location.host}/moderator`);
+
+        // Show login form initially
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('chat-box').style.display = 'none';
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const password = document.getElementById('password').value;
+            if (password === correctPassword) {
+                // Hide login form and show chat interface
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('chat-box').style.display = 'block';
+
+                // Set up WebSocket connection to listen for incoming messages
+                socket.onmessage = function(event) {
+                    const chatMessages = document.getElementById('chat-messages');
+                    const messageElement = document.createElement('p');
+                    messageElement.innerHTML = event.data;
+                    messageElement.classList.add('unread');
+                    chatMessages.appendChild(messageElement);
+                };
+            } else {
+                alert('Incorrect password!');
+            }
+        });
+
+        // Send message to user
+        function sendMessage() {
+            const message = document.getElementById('message').value;
+            socket.send(message);
+            document.getElementById('message').value = ''; // Clear input field
+        }
+
+        // Mark messages as read when clicked
+        document.getElementById('chat-messages').addEventListener('click', function(event) {
+            if (event.target.classList.contains('unread')) {
+                event.target.classList.remove('unread');
+                event.target.classList.add('read');
+            }
+        });
+
+        // End chat
+        function endChat() {
+            // Close the WebSocket connection and reset the page
+            socket.close();
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('chat-box').style.display = 'none';
+            document.getElementById('password').value = ''; // Clear password field
+        }
+    </script>
+</body>
+</html>

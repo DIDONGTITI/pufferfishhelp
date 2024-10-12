@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anonymous Chat</title>
+</head>
+<body>
+    <h2>Chat with Moderator</h2>
+    <div id="chat-box"></div>
+    <input type="text" id="message" placeholder="Enter your message">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        let socket = new WebSocket(`ws://${window.location.host}`);
+        socket.onmessage = function(event) {
+            let chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML += `<p>${event.data}</p>`;
+        };
+
+        function sendMessage() {
+            let message = document.getElementById('message').value;
+            socket.send(message);
+            document.getElementById('message').value = '';
+        }
+    </script>
+</body>
+</html>

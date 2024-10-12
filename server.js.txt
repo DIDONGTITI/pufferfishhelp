@@ -1,0 +1,60 @@
+const express = require('express');
+const WebSocket = require('ws');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Serve static files for the frontend
+app.use(express.static('public'));
+
+// Simple in-memory data structure to store chat sessions
+let clients = [];
+let moderators = [];
+
+// Create WebSocket server
+const server = app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+const wss = new WebSocket.Server({ server });
+
+// WebSocket connection handling
+wss.on('connection', (ws, req) => {
+    let isModerator = req.url.includes('moderator');
+
+    if (isModerator) {
+        moderators.push(ws);
+        console.log("Moderator connected.");
+    } else {
+        clients.push(ws);
+        console.log("Anonymous user connected.");
+    }
+
+    // Handle incoming messages
+    ws.on('message', (message) => {
+        if (isModerator) {
+            // Broadcast moderator message to the respective user
+            clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(`Moderator: ${message}`);
+                }
+            });
+        } else {
+            // Broadcast user message to the moderator
+            moderators.forEach(mod => {
+                if (mod.readyState === WebSocket.OPEN) {
+                    mod.send(`User: ${message}`);
+                }
+            });
+        }
+    });
+
+    // Handle connection close
+    ws.on('close', () => {
+        if (isModerator) {
+            moderators = moderators.filter(mod => mod !== ws);
+            console.log("Moderator disconnected.");
+        } else {
+            clients = clients.filter(client => client !== ws);
+            console.log("User disconnected.");
+        }
+    });
+});
